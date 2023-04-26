@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Chatbot</title>
+</head>
+<body>
+    <h1>Chatbot</h1>
+    <form method="post" action="/chat">
+        <input type="text" name="message" placeholder="Escribe un mensaje...">
+        <button type="submit">Enviar</button>
+    </form>
+    <br>
+    <div id="chat">
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+    </div>
+    <br>
+    {% if response_time %}
+        <p>Tiempo de respuesta: {{ response_time }}</p>
+    {% endif %}
+</body>
+</html>

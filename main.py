@@ -1,77 +1,142 @@
-import nltk
-from nltk.stem import WordNetLemmatizer
-import pickle
-import numpy as np
-from keras.models import load_model
+from fastapi import FastAPI, Request, Form
+from datetime import time
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+import np as np
 import json
-import random
+import string
+import time
+import numpy as np
+import unicodedata
+import tensorflow as tf
+from keras.preprocessing.text import Tokenizer
+from tensorflow import keras
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Desactiva el uso de instrucciones AVX
 
-from fastapi import FastAPI
-from pydantic import BaseModel
+
+# Cargar datos del archivo JSON
+with open("intents.json", encoding='utf-8') as archivo:
+    datos = json.load(archivo)
+
+# Preprocesamiento de los datos
+entrenamiento = []
+clases = []
+documentos = []
+ignorar = ["?", "!", ".", ","]
+
+for intent in datos["intents"]:
+    for patron in intent["patterns"]:
+        # Convertir a minúsculas y eliminar signos de puntuación
+        palabras = [palabra.lower() for palabra in patron.split() if palabra not in ignorar]
+        entrenamiento.append(" ".join(palabras))
+        clases.append(intent["tag"])
+        documentos.append((palabras, intent["tag"]))
+
+# Crear diccionario de palabras
+tokenizer = Tokenizer()
+tokenizer.fit_on_texts(entrenamiento)
+palabras = tokenizer.word_index
+num_palabras = len(palabras) + 1
+
+# Crear datos de entrenamiento
+entradas = []
+salidas = []
+for doc in documentos:
+    # Crear vectores one-hot para la entrada
+    entrada = [0] * num_palabras
+    for palabra in doc[0]:
+        if palabra in palabras:
+            entrada[palabras[palabra]] = 1
+    entradas.append(entrada)
+
+    # Crear vectores one-hot para la salida
+    salida = [0] * len(clases)
+    salida[clases.index(doc[1])] = 1
+    salidas.append(salida)
+
+# Convertir a matrices numpy
+X = np.array(entradas)
+Y = np.array(salidas)
+
+# Definir modelo de red neuronal
+modelo = tf.keras.Sequential([
+    tf.keras.layers.Dense(128, input_dim=num_palabras, activation='relu'),
+    tf.keras.layers.Dense(len(clases), activation='softmax')
+])
+modelo.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+# Entrenar modelo
+modelo.fit(X, Y, epochs=200, batch_size=64, verbose=1)
+
+#guardar modelo
+modelo.save('modelo_chatbot_final.h5')
+
+# cargar modelo
+modelo = tf.keras.models.load_model('modelo_chatbot_final.h5')
+
+def procesar_entrada(entrada):
+    # Eliminar signos de puntuación y tildes
+    entrada = entrada.lower()
+    entrada = entrada.translate(str.maketrans('', '', string.punctuation))
+    entrada = unicodedata.normalize('NFKD', entrada).encode('ASCII', 'ignore').decode('utf-8')
+    return entrada
+
+
+def chatbot_respuesta(texto: str) -> str:
+    global response_time
+    start_time = time.time()
+
+    texto = procesar_entrada(texto)
+
+    entrada = [0] * num_palabras
+    palabras_entrada = [palabra.lower() for palabra in texto.split() if palabra not in ignorar]
+    for palabra in palabras_entrada:
+        if palabra in palabras:
+            entrada[palabras[palabra]] = 1
+
+    prediccion = modelo.predict(np.array([entrada]))
+    respuesta_index = np.argmax(prediccion)
+    tag_respuesta = clases[respuesta_index]
+
+    preguntas_respuestas = {}
+    for intent in datos["intents"]:
+        if intent["tag"] == tag_respuesta:
+            patterns = intent["patterns"]
+            responses = intent["responses"]
+            if len(patterns) == len(responses):
+                for i, pattern in enumerate(patterns):
+                    pregunta = procesar_entrada(pattern)
+                    respuesta = responses[i]
+                    preguntas_respuestas[pregunta] = respuesta
+
+    if preguntas_respuestas:
+        respuesta = preguntas_respuestas.get(texto.lower(), "")
+        if respuesta == "":
+            respuesta = np.random.choice(list(preguntas_respuestas.values()))
+    else:
+        respuesta = np.random.choice(responses)
+
+    end_time = time.time()
+    response_time = end_time - start_time
+    response_time = f"{(end_time - start_time) * 1000:.2f} ms"
+    return respuesta
+
 
 app = FastAPI()
+templates = Jinja2Templates(directory="templates")
 
-lemmatizer = WordNetLemmatizer()
-model = load_model('chatbot_model.h5')
-intents = json.loads(open('intents.json').read())
-words = pickle.load(open('words.pkl','rb'))
-classes = pickle.load(open('classes.pkl','rb'))
+messages = []
 
-# definir el modelo de datos para la solicitud POST
-class ChatRequest(BaseModel):
-    message: str
 
-# definir el modelo de datos para la respuesta JSON
-class ChatResponse(BaseModel):
-    response: str
+@app.get("/", response_class=HTMLResponse)
+def read_chat(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request, "messages": messages})
 
-# preprocessamento input utente
-def clean_up_sentence(sentence):
-    sentence_words = nltk.word_tokenize(sentence)
-    sentence_words = [lemmatizer.lemmatize(word.lower()) for word in sentence_words]
-    return sentence_words
 
-# creazione bag of words
-def bow(sentence, words, show_details=True):
-    sentence_words = clean_up_sentence(sentence)
-    bag = [0]*len(words)
-    for s in sentence_words:
-        for i,w in enumerate(words):
-            if w == s:
-                bag[i] = 1
-                if show_details:
-                    print ("found in bag: %s" % w)
-    return(np.array(bag))
-
-def calcola_pred(sentence, model):
-    p = bow(sentence, words,show_details=False)
-    res = model.predict(np.array([p]))[0]
-    ERROR_THRESHOLD = 0.25
-    results = [[i,r] for i,r in enumerate(res) if r>ERROR_THRESHOLD]
-    # sort by strength of probability
-    results.sort(key=lambda x: x[1], reverse=True)
-    return_list = []
-    for r in results:
-        return_list.append({"intent": classes[r[0]], "probability": str(r[1])})
-    return return_list
-
-def getRisposta(ints, intents_json):
-    tag = ints[0]['intent']
-    list_of_intents = intents_json['intents']
-    for i in list_of_intents:
-        if(i['tag']== tag):
-            result = random.choice(i['responses'])
-            break
-    return result
-
-# función controlador que maneja la solicitud POST
-@app.post("/chatbot")
-async def chatbot(request: ChatRequest):
-    msg = request.message
-    res = inizia(msg)
-    return ChatResponse(response=res)
-
-def inizia(msg):
-    ints = calcola_pred(msg, model)
-    res = getRisposta(ints, intents)
-    return res
+@app.post("/chat")
+async def chatbot(request: Request, message: str = Form(...)):
+    respuesta = chatbot_respuesta(message)
+    messages.append(f"Usuario: {message}")
+    messages.append(f"Chatbot: {respuesta}")
+    return templates.TemplateResponse("index.html", {"request": request, "messages": messages, "response_time": response_time})
