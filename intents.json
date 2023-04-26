@@ -1,0 +1,190 @@
+{
+    "intents": [
+        {
+            "tag": "Hola",
+            "patterns": [
+                "Hola",
+                "Holis",
+                "Como esta",
+                "Buen dia",
+                "Buenos dias",
+                "Buenas tardes",
+                "Buenas noches",
+                "Buena tarde"
+            ],
+            "responses": [
+                "Hola!, Como te puedo ayudar?",
+                "Bienvenido",
+                "Buen dia, que deseas?"
+            ],
+            "context": [
+                ""
+            ]
+        },
+        {
+            "tag": "Comida",
+            "patterns": [
+                "Que comida hay",
+                "Que comida ofrecen",
+                "Que ofrecen",
+                "Que tienen",
+                "Que venden",
+                "Que ofrecen",
+                "Que tienen"
+            ],
+            "responses": [
+                "El menu es el siguiente: \n      Hamburguesas:                         Pizzas:   \n   Hamburguesa triple carne.               Pizza peperoni.\n   Hamburguesa doble carne.               Pizza hawaiana.\n   Hamburguesa sencilla.               Pizza vegetariana.\n   Hamburguesa de pollo.               Pizza napolitana.\n   Hamburguesa extra queso.               Pizza mexicana.\n   Hamburguesa vegana.               Pizza champiñones.\n   Hamburguesa de la casa.               Pizza de pollo.\n   Hamburguesa sana.               Pizza italiana.\n   Hamburguesa de cerdo.               Pizza estofada.\n   Hamburguesa de cordero.               Pizza de bocadillo y queso."
+            ],
+            "context": [
+                ""
+            ]
+        },
+        {
+            "tag": "Adios",
+            "patterns": [
+                "Adios",
+                "Chao",
+                "Nos vemos luego",
+                "Hasta luego"
+            ],
+            "responses": [
+                "Que tengas un buen dia"
+            ],
+            "context": [
+                ""
+            ]
+        },
+        {
+            "tag": "Estado",
+            "patterns": [
+                "Como estas",
+                "Como te encuentras",
+                "Que tal todo",
+                "Que tal la vida"
+            ],
+            "responses": [
+                "Todo esta perfecto, espero que tambien estes asi"
+            ],
+            "context": [
+                ""
+            ]
+        },
+        {
+            "tag": "EstadoUsuario",
+            "patterns": [
+                "Estoy bien",
+                "Me encuentro bien",
+                "Todo esta excelente",
+                "Bien gracias"
+            ],
+            "responses": [
+                "Lo ideal es disfrutar, amar y progresar",
+                "Me alegra que estes bien",
+                "Me alegra saberlo"
+            ],
+            "context": [
+                ""
+            ]
+        },
+        {
+            "tag": "Nombre",
+            "patterns": [
+                "Como te llamas",
+                "Quien eres",
+                "Me quieres",
+                "Cual es tu nombre",
+                "Quien es tu creador",
+                "Quieres ser mi amigo"
+            ],
+            "responses": [
+                "Solo se que me llamo FastFoodBot y mi funcion es ayudarte"
+            ],
+            "context": [
+                ""
+            ]
+        },
+        {
+            "tag": "Gracias",
+            "patterns": [
+                "Gracias",
+                "Muchas gracias",
+                "Perfecto",
+                "Increible",
+                "Me ayudaste mucho"
+            ],
+            "responses": [
+                "Siempre a la orden"
+            ],
+            "context": [
+                ""
+            ]
+        },
+        {
+            "tag": "Precio",
+            "patterns": [
+                "Cual es el precio",
+                "Que precio tiene",
+                "Cuanto vale",
+                "A como es",
+                "A cuanto es",
+                "Que costo tiene"
+            ],
+            "responses": [
+                "El precio es de $10.000 cop",
+                "Vale 10 mil pesos",
+                "Esta en 10 mil pesos"
+            ],
+            "context": [
+                ""
+            ]
+        },
+        {
+            "tag": "Recomendacion",
+            "patterns": [
+                "Que me recomiendas",
+                "Cual es la mejor comida",
+                "Cual es tu recomendacion",
+                "Quiero algo rico",
+                "Necesito una sugerencia",
+                "Que me sugieres"
+            ],
+            "responses": [
+                "Te recomiendo una hamburguesa doble, es deliciosa",
+                "Te recomiendo una pizza hawaiana, te podria gustar",
+                "Una bebida no estaria mal si quieres mientras decides que te gusta, es mi sugerencia",
+                "Te sugiero que si quieres comer algo rico pidas un postre de leche, te gustara"
+            ],
+            "context": [
+                ""
+            ]
+        },
+        {
+            "tag": "Direccion",
+            "patterns": [
+                "En donde estan ubicados",
+                "En donde se encuentran",
+                "Cual es la direccion",
+                "Como los ubico",
+                "Donde estan",
+                "Quiero ir"
+            ],
+            "responses": [
+                "Nos encontramos en Armenia Avenida Principal calle Norte 2 # 15, te esperamos",
+                "Nuestra ubicacion es Armenia Avenida Principal calle Norte 2 # 15, ven y come"
+            ],
+            "context": [
+                ""
+            ]
+        },
+        {
+            "tag": "noanswer",
+            "patterns": [],
+            "responses": [
+                "Lo siento, no pude entenderte, ¿A que te refieres?"
+            ],
+            "context": [
+                ""
+            ]
+        }
+    ]
+}
