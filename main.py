@@ -140,3 +140,6 @@ async def chatbot(request: Request, message: str = Form(...)):
     messages.append(f"Usuario: {message}")
     messages.append(f"Chatbot: {respuesta}")
     return templates.TemplateResponse("index.html", {"request": request, "messages": messages, "response_time": response_time})
+
+
+"prueba"
