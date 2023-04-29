@@ -13,6 +13,23 @@ from keras.preprocessing.text import Tokenizer
 from tensorflow import keras
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Desactiva el uso de instrucciones AVX
+import sqlite3
+from datetime import datetime
+from fastapi import FastAPI, Request, Form, Query
+
+# Crear tabla para almacenar los mensajes
+conn = sqlite3.connect('chatbot.db')
+cursor = conn.cursor()
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS mensajes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id TEXT,
+    mensaje TEXT,
+    respuesta TEXT,
+    fecha_hora DATETIME
+)
+''')
+conn.commit()
 
 
 # Cargar datos del archivo JSON
@@ -58,7 +75,7 @@ for doc in documentos:
 # Convertir a matrices numpy
 X = np.array(entradas)
 Y = np.array(salidas)
-
+"""
 # Definir modelo de red neuronal
 modelo = tf.keras.Sequential([
     tf.keras.layers.Dense(128, input_dim=num_palabras, activation='relu'),
@@ -71,7 +88,7 @@ modelo.fit(X, Y, epochs=200, batch_size=64, verbose=1)
 
 #guardar modelo
 modelo.save('modelo_chatbot_final.h5')
-
+"""
 # cargar modelo
 modelo = tf.keras.models.load_model('modelo_chatbot_final.h5')
 
@@ -123,20 +140,44 @@ def chatbot_respuesta(texto: str) -> str:
     return respuesta
 
 
+def guardar_mensaje(session_id, mensaje, respuesta):
+    fecha_hora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    cursor.execute('INSERT INTO mensajes (session_id, mensaje, respuesta, fecha_hora) VALUES (?, ?, ?, ?)', 
+                   (session_id, mensaje, respuesta, fecha_hora))
+    conn.commit()
+    if cursor.lastrowid:
+        print(f"Mensaje guardado en la base de datos: session_id={session_id}, mensaje={mensaje}, respuesta={respuesta}, fecha_hora={fecha_hora}")
+    else:
+        print(f"Error al guardar el mensaje en la base de datos: session_id={session_id}, mensaje={mensaje}, respuesta={respuesta}, fecha_hora={fecha_hora}")
+
+
+def obtener_mensajes(session_id):
+    cursor.execute('SELECT mensaje, respuesta FROM mensajes WHERE session_id = ? ORDER BY fecha_hora', (session_id,))
+    mensajes = cursor.fetchall()
+    print(f"Mensajes recuperados de la base de datos para session_id={session_id}: {mensajes}")
+    return mensajes
+
+
+
+
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
 messages = []
 
-
-@app.get("/", response_class=HTMLResponse)
-def read_chat(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request, "messages": messages})
-
-
 @app.post("/chat")
-async def chatbot(request: Request, message: str = Form(...)):
+async def chatbot(request: Request, message: str = Form(...), session_id: str = Query(...)):
+    historial = obtener_mensajes(session_id)
     respuesta = chatbot_respuesta(message)
+    guardar_mensaje(session_id, message, "Usuario")
+    guardar_mensaje(session_id, respuesta, "Chatbot")
+    messages = [f"Usuario: {m[0]}\nChatbot: {m[1]}" for m in historial]
     messages.append(f"Usuario: {message}")
     messages.append(f"Chatbot: {respuesta}")
     return templates.TemplateResponse("index.html", {"request": request, "messages": messages, "response_time": response_time})
+
+@app.get("/", response_class=HTMLResponse)
+def read_chat(request: Request, session_id: str = Query(...)):
+    historial = obtener_mensajes(session_id)
+    messages = [f"Usuario: {m[0]}\nChatbot: {m[1]}" for m in historial]
+    return templates.TemplateResponse("index.html", {"request": request, "messages": messages})
