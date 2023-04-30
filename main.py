@@ -182,4 +182,3 @@ def read_chat(request: Request, session_id: str = Query(...)):
     messages = [f"Usuario: {m[0]}\nChatbot: {m[1]}" for m in historial]
     return templates.TemplateResponse("index.html", {"request": request, "messages": messages})
 
-"PRUEBA"
