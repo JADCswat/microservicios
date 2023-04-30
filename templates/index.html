@@ -8,6 +8,7 @@
     <h1>Chatbot</h1>
     <form method="post" action="/chat">
         <input type="text" name="message" placeholder="Escribe un mensaje...">
+        <input type="hidden" name="session_id" value="{{ session_id }}">
         <button type="submit">Enviar</button>
     </form>
     <br>
